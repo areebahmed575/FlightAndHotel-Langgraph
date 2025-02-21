@@ -5,5 +5,8 @@ langchain-openai
 langchain-google-genai
 serpapi
 sendgrid
-
+fastapi
+uvicorn
+pydantic
+python-dotenv
      
