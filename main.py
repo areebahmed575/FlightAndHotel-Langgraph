@@ -2,13 +2,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from langchain_core.messages import HumanMessage
 import uvicorn
-import asyncio
 from fastapi.middleware.cors import CORSMiddleware
 from agent import graph  
-# Import the compiled LangGraph agent
 from agent import graph, update_email_config
 
-# Define a request model; here the client provides the initial message.
+
 class TravelRequest(BaseModel):
     initial_message: str
 
