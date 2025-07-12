@@ -19,7 +19,7 @@ from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv, find_dotenv
 from dataclasses import dataclass
-# Load API keys from environment variables
+
 
 load_dotenv()
 
@@ -36,7 +36,7 @@ llm = ChatOpenAI(model="gpt-4o-mini", api_key=open_api_key)
 
 CURRENT_YEAR = datetime.datetime.now().year
 
-# Prompts for the agent and the email conversion
+
 TOOLS_SYSTEM_PROMPT = f"""You are a smart travel agency specializing in Pakistan tourism.
 You provide travel options only for domestic travel within Pakistan.
 Use the tools to look up information on hotels and flights available in Pakistan.
@@ -150,11 +150,10 @@ Expected Output:
 </example>
 """
 
-# Instantiate the LLM
-llm = ChatOpenAI(model="gpt-4o-mini", api_key=open_api_key)
-llm_with_tools = None  # We will bind the tools after they are defined
 
-# Define the agent state (here we use a simple subclass of MessagesState)
+llm = ChatOpenAI(model="gpt-4o-mini", api_key=open_api_key)
+llm_with_tools = None  
+
 class AgentState(MessagesState):
     pass
 
@@ -263,23 +262,21 @@ def hotels_finder(params: HotelsInput):
 
 
 
-# Bind our tools to the LLM
+
 tools = [flights_finder, hotels_finder]
 llm_with_tools = llm.bind_tools(tools)
 
-############################
-# Graph Node Functions
-############################
+
 
 def assistant(state: AgentState):
-    # Prepend the system prompt to the conversation
+   
     messages = state['messages']
     messages = [SystemMessage(content=TOOLS_SYSTEM_PROMPT)] + messages
     message = llm_with_tools.invoke(messages)
     return {'messages': [message]}
 
 def exists_action(state: AgentState):
-    # Check if the latest assistant message contained any tool calls
+  
     result = state['messages'][-1]
     if len(result.tool_calls) == 0:
         return 'email_sender'
@@ -290,7 +287,7 @@ class EmailConfig:
     email_to: Optional[str] = None
     subject: Optional[str] = None
 
-# Create a global email config instance
+
 email_config = EmailConfig()
 
 def update_email_config(email_to: str, subject: str):
@@ -299,7 +296,7 @@ def update_email_config(email_to: str, subject: str):
     email_config.email_to = email_to
     email_config.subject = subject
 
-# Modify the email_sender function
+
 def email_sender(state: AgentState):
     print('Sending email')
     email_message = [
@@ -309,13 +306,13 @@ def email_sender(state: AgentState):
     email_response = llm.invoke(email_message)
     print('Email content:', email_response.content)
     
-    # Use the dynamic email configuration
+   
     print(f"email_config.email_to",email_config.email_to)
     print(f"email_config.subject",email_config.subject)
     message = Mail(
         from_email="areeb.ahmed.langgraph@gmail.com",
-        to_emails=email_config.email_to,  # Use dynamic email
-        subject=email_config.subject,      # Use dynamic subject
+        to_emails=email_config.email_to, 
+        subject=email_config.subject,    
         html_content=email_response.content
     )
     try:
@@ -326,16 +323,13 @@ def email_sender(state: AgentState):
         print("SendGrid error:", str(e))
     return state
 
-############################
-# Build the Graph
-############################
 
 builder: StateGraph = StateGraph(AgentState)
 builder.add_node("assistant", assistant)
 builder.add_node("tools", ToolNode(tools))
 builder.add_node("email_sender", email_sender)
 
-# Define control flow edges
+
 builder.add_edge(START, "assistant")
 builder.add_conditional_edges("assistant", exists_action, {"more_tools": "tools", "email_sender": "email_sender"})
 builder.add_edge("tools", "assistant")
